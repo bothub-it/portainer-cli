@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+plac = ">=1.0.0"
+requests = ">=2.20.0"
+validators = ">=0.12.2"
+
+[dev-packages]
+"flake8" = "*"
+setuptools = "*"
+wheel = "*"
+
+[requires]
+python_version = "3.7"
