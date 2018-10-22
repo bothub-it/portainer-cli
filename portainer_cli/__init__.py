@@ -27,11 +27,13 @@ class PortainerCLI:
     COMMAND_LOGIN = 'login'
     COMMAND_REQUEST = 'request'
     COMMAND_UPDATE_STACK = 'update_stack'
+    COMMAND_UPDATE_REGISTRY = 'update_registry'
     COMMANDS = [
         COMMAND_CONFIGURE,
         COMMAND_LOGIN,
         COMMAND_REQUEST,
         COMMAND_UPDATE_STACK,
+        COMMAND_UPDATE_REGISTRY,
     ]
 
     METHOD_GET = 'GET'
@@ -142,6 +144,31 @@ class PortainerCLI:
         )
 
     @plac.annotations(
+        name=('Name', 'option'),
+        url=('URL', 'option'),
+        authentication=('Use authentication', 'flag', 'a'),
+        username=('Username', 'option'),
+        password=('Password', 'option'),
+    )
+    def update_registry(self, id, name='', url='', authentication=False,
+                        username='', password=''):
+        assert not authentication or (authentication and username and password)
+        registry_url = f'registries/{id}'
+        current = self.request(registry_url).json()
+        data = {
+            'Name': name or current.get('Name'),
+            'URL': url or current.get('URL'),
+            'Authentication': authentication,
+            'Username': username or current.get('Username'),
+            'Password': password,
+        }
+        self.request(
+            registry_url,
+            self.METHOD_PUT,
+            data,
+        )
+
+    @plac.annotations(
         printc=('Print response content', 'flag', 'p'),
     )
     def request(self, path, method=METHOD_GET, data='', printc=False):
@@ -188,5 +215,7 @@ class PortainerCLI:
             plac.call(self.login, args)
         elif command == self.COMMAND_UPDATE_STACK:
             plac.call(self.update_stack, args)
+        elif command == self.COMMAND_UPDATE_REGISTRY:
+            plac.call(self.update_registry, args)
         elif command == self.COMMAND_REQUEST:
             plac.call(self.request, args)

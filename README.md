@@ -61,7 +61,7 @@ portainer-cli update_stack id endpoint_id [stack_file]
 portainer-cli update_stack 2 1 docker-compose.yml
 ```
 
-#### update_stack command environment variables arguments
+#### Environment variables arguments
 
 ```bash
 portainer-cli update_stack id endpoint_id [stack_file] --env.var=value
@@ -75,6 +75,28 @@ Where `var` is environment variable name and `value` is the environment variable
 |--|--|
 | `-p` or `--prune` | Prune services |
 | `-c` or `--clear-env` | Clear all environment variables |
+
+### update_registry command
+
+Update registry.
+
+```bash
+portainer-cli update_registry id [-name] [-url]
+```
+
+**E.g:**
+
+```bash
+portainer-cli update_registry 1 -name="Some registry" -url="some.url.com/r"
+```
+
+#### Authentication
+
+You can use authentication passing `-a` or `--authentication` flag, but you must pass the `-username` and `-password` options.
+
+```bash
+portainer-cli update_registry 1 -a -username=douglas -password=d1234
+```
 
 ### request command
 
