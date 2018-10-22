@@ -7,7 +7,7 @@ import validators
 from pathlib import Path
 from requests import Request, Session
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 logger = logging.getLogger('portainer-cli')
 
