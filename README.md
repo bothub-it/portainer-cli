@@ -2,7 +2,7 @@
 
 Powered by [Ilhasoft's Web Team](http://www.ilhasoft.com.br/en/).
 
-Portainer CLI is a Python software to use in command line. Use this command line interface to easy communicate to your [Portainer](https://portainer.io/) application, like in a continuous integration and continuous deploy environments.
+Portainer CLI is a Python software to use in command line. Use this command line interface to easy communicate with your [Portainer](https://portainer.io/) application, like in a continuous integration and continuous deployment environments.
 
 ## Install
 
@@ -67,7 +67,7 @@ portainer-cli update_stack 2 1 docker-compose.yml
 portainer-cli update_stack id endpoint_id [stack_file] --env.var=value
 ```
 
-Where `var` is environment variable name and `value` is the environment variable value.
+Where `var` is the environment variable name and `value` is the environment variable value.
 
 #### Flags
 
