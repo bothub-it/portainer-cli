@@ -28,5 +28,5 @@ setuptools.setup(
         'requests>=2.20.0',
         'validators>=0.12.2',
     ],
-    python_requires='>=3.6',
+    python_requires='>=2.7',
 )
