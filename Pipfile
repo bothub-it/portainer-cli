@@ -12,6 +12,3 @@ validators = ">=0.12.2"
 "flake8" = "*"
 setuptools = "*"
 wheel = "*"
-
-[requires]
-python_version = "3.7"

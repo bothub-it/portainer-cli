@@ -1,13 +1,19 @@
 #!/usr/bin/env python
-import logging
-import plac
-import json
+import os
 import re
+import logging
+import json
+import plac
 import validators
-from pathlib import Path
 from requests import Request, Session
 
-__version__ = '0.1.0'
+
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
+__version__ = '0.2.1'
 
 logger = logging.getLogger('portainer-cli')
 
@@ -22,7 +28,7 @@ def env_arg_to_dict(s):
     }
 
 
-class PortainerCLI:
+class PortainerCLI(object):
     COMMAND_CONFIGURE = 'configure'
     COMMAND_LOGIN = 'login'
     COMMAND_REQUEST = 'request'
@@ -50,7 +56,7 @@ class PortainerCLI:
     def base_url(self, value):
         if not validators.url(value):
             raise Exception('Insert a valid base URL')
-        self._base_url = value if value.endswith('/') else f'{value}/'
+        self._base_url = value if value.endswith('/') else '{}/'.format(value)
         self.persist()
 
     @property
@@ -68,16 +74,20 @@ class PortainerCLI:
             logger.debug('using local configuration file')
             return '.portainer-cli.json'
         logger.debug('using user configuration file')
-        return Path.joinpath(Path.home(), '.portainer-cli.json')
+        return os.path.join(
+            os.path.expanduser('~'),
+            '.portainer-cli.json',
+        )
 
     def persist(self):
         data = {
             'base_url': self.base_url,
             'jwt': self.jwt,
         }
-        logger.info(f'persisting configuration: {data}')
+        logger.info('persisting configuration: {}'.format(data))
         data_file = open(self.data_path, 'w+')
         data_file.write(json.dumps(data))
+        logger.info('configuration persisted in: {}'.format(self.data_path))
 
     def load(self):
         try:
@@ -85,7 +95,7 @@ class PortainerCLI:
         except FileNotFoundError:
             return
         data = json.loads(data_file.read())
-        logger.info(f'configuration loaded: {data}')
+        logger.info('configuration loaded: {}'.format(data))
         self._base_url = data.get('base_url')
         self._jwt = data.get('jwt')
 
@@ -103,7 +113,7 @@ class PortainerCLI:
         )
         r = response.json()
         jwt = r.get('jwt')
-        logger.info(f'logged with jwt: {jwt}')
+        logger.info('logged with jwt: {}'.format(jwt))
         self.jwt = jwt
 
     @plac.annotations(
@@ -112,15 +122,20 @@ class PortainerCLI:
     )
     def update_stack(self, id, endpoint_id, stack_file='', prune=False,
                      clear_env=False, *args):
-        stack_url = f'stacks/{id}?endpointId={endpoint_id}'
+        stack_url = 'stacks/{}?endpointId={}'.format(
+            id,
+            endpoint_id,
+        )
         current = self.request(stack_url).json()
         stack_file_content = ''
         if stack_file:
             stack_file_content = open(stack_file).read()
         else:
             stack_file_content = self.request(
-                f'stacks/{id}/file?endpointId={endpoint_id}').json().get(
-                    'StackFileContent')
+                'stacks/{}/file?endpointId={}').format(
+                    id,
+                    endpoint_id,
+                ).json().get('StackFileContent')
         env_args = filter(
             lambda x: re.match(env_arg_regex, x),
             args,
@@ -145,7 +160,10 @@ class PortainerCLI:
         printc=('Print response content', 'flag', 'p'),
     )
     def request(self, path, method=METHOD_GET, data='', printc=False):
-        url = f'{self.base_url}api/{path}'
+        url = '{}api/{}'.format(
+            self.base_url,
+            path,
+        )
         session = Session()
         request = Request(method, url)
         prepped = request.prepare()
@@ -154,13 +172,13 @@ class PortainerCLI:
             try:
                 json.loads(data)
                 prepped.body = data
-            except Exception as e:
+            except Exception:
                 prepped.body = json.dumps(data)
             prepped.headers['Content-Length'] = len(prepped.body)
         if self.jwt:
-            prepped.headers['Authorization'] = f'Bearer {self.jwt}'
+            prepped.headers['Authorization'] = 'Bearer {}'.format(self.jwt)
         response = session.send(prepped)
-        logger.debug(f'request response: {response.content}')
+        logger.debug('request response: {}'.format(response.content))
         response.raise_for_status()
         if printc:
             print(response.content.decode())
