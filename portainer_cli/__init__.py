@@ -168,7 +168,7 @@ class PortainerCLI(object):
     def update_registry(self, id, name='', url='', authentication=False,
                         username='', password=''):
         assert not authentication or (authentication and username and password)
-        registry_url = f'registries/{id}'
+        registry_url = 'registries/{}'.format(id)
         current = self.request(registry_url).json()
         data = {
             'Name': name or current.get('Name'),
