@@ -13,7 +13,7 @@ try:
 except NameError:
     FileNotFoundError = IOError
 
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 logger = logging.getLogger('portainer-cli')
 
