@@ -22,10 +22,7 @@ env_arg_regex = r'--env\.(.+)=(.+)'
 
 def env_arg_to_dict(s):
     split = re.split(env_arg_regex, s)
-    return {
-        'name': split[1],
-        'value': split[2],
-    }
+    return (split[1], split[2],)
 
 
 class PortainerCLI(object):
@@ -119,11 +116,12 @@ class PortainerCLI(object):
         self.jwt = jwt
 
     @plac.annotations(
+        env_file=('Environment Variable file', 'option'),
         prune=('Prune services', 'flag', 'p'),
         clear_env=('Clear all env vars', 'flag', 'c'),
     )
-    def update_stack(self, id, endpoint_id, stack_file='', prune=False,
-                     clear_env=False, *args):
+    def update_stack(self, id, endpoint_id, stack_file='', env_file='',
+                     prune=False, clear_env=False, *args):
         stack_url = 'stacks/{}?endpointId={}'.format(
             id,
             endpoint_id,
@@ -134,24 +132,53 @@ class PortainerCLI(object):
             stack_file_content = open(stack_file).read()
         else:
             stack_file_content = self.request(
-                'stacks/{}/file?endpointId={}').format(
+                'stacks/{}/file?endpointId={}'.format(
                     id,
                     endpoint_id,
-                ).json().get('StackFileContent')
-        env_args = filter(
-            lambda x: re.match(env_arg_regex, x),
-            args,
+                )
+            ).json().get('StackFileContent')
+        if env_file:
+            env = {}
+            for env_line in open(env_file).readlines():
+                env_line = env_line.strip()
+                if not env_line \
+                        or env_line.startswith('#') \
+                        or '=' not in env_line:
+                    continue
+                k, v = env_line.split('=', 1)
+                k, v = k.strip(), v.strip()
+                env[k] = v
+        else:
+            env_args = filter(
+                lambda x: re.match(env_arg_regex, x),
+                args,
+            )
+            env = dict(map(
+                lambda x: env_arg_to_dict(x),
+                env_args,
+            ))
+        if not clear_env:
+            current_env = dict(
+                map(
+                    lambda x: (x.get('name'), x.get('value'),),
+                    current.get('Env'),
+                ),
+            )
+            current_env.update(env)
+            env = current_env
+        final_env = list(
+            map(
+                lambda x: {'name': x[0], 'value': x[1]},
+                env.items()
+            ),
         )
-        env = list(map(
-            lambda x: env_arg_to_dict(x),
-            env_args,
-        ))
         data = {
             'Id': id,
             'StackFileContent': stack_file_content,
             'Prune': prune,
-            'Env': env if len(env) > 0 or clear_env else current.get('Env'),
+            'Env': final_env if len(final_env) > 0 else current.get('Env'),
         }
+        logger.debug('update stack data: {}'.format(data))
         self.request(
             stack_url,
             self.METHOD_PUT,
