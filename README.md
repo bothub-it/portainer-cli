@@ -52,7 +52,7 @@ portainer-cli login douglas d1234
 Update stack.
 
 ```bash
-portainer-cli update_stack id endpoint_id [stack_file]
+portainer-cli update_stack id endpoint_id [stack_file] [-env-file]
 ```
 
 **E.g:**
@@ -73,6 +73,7 @@ Where `var` is the environment variable name and `value` is the environment vari
 
 | Flag | Description |
 |--|--|
+| `-env-file` | Pass env file path, usually `.env` |
 | `-p` or `--prune` | Prune services |
 | `-c` or `--clear-env` | Clear all environment variables |
 
