@@ -29,14 +29,14 @@ class PortainerCLI(object):
     COMMAND_CONFIGURE = 'configure'
     COMMAND_LOGIN = 'login'
     COMMAND_REQUEST = 'request'
-    COMMAND_UPDATE_STACK = 'update_stack'
+    COMMAND_CREATE_OR_UPDATE_STACK = 'create_or_update_stack'
     COMMAND_UPDATE_REGISTRY = 'update_registry'
     COMMANDS = [
         COMMAND_CONFIGURE,
         COMMAND_LOGIN,
         COMMAND_REQUEST,
-        COMMAND_UPDATE_STACK,
-        COMMAND_UPDATE_REGISTRY,
+        COMMAND_CREATE_OR_UPDATE_STACK,
+        COMMAND_UPDATE_REGISTRY
     ]
 
     METHOD_GET = 'GET'
@@ -46,6 +46,8 @@ class PortainerCLI(object):
     local = False
     _base_url = 'http://localhost:9000/'
     _jwt = None
+    _proxies = {}
+    _swarm_id = None
 
     @property
     def base_url(self):
@@ -65,6 +67,32 @@ class PortainerCLI(object):
     @jwt.setter
     def jwt(self, value):
         self._jwt = value
+        self.persist()
+
+    @property
+    def proxies(self):
+        return self._proxies
+
+    @proxies.setter
+    def proxies(self, value):
+        try:
+            self._proxies['http'] = os.environ['HTTP_PROXY']
+        except KeyError:
+            self._proxies['http'] = ''
+        try:
+            self._proxies['https'] = os.environ['HTTPS_PROXY']
+        except KeyError:
+            self._proxies['https'] = ''
+        if self._proxies['http'] == '' and self._proxies['https'] == '':
+            self._proxies = {}
+
+    @property
+    def swarm_id(self):
+        return self._swarm_id
+
+    @swarm_id.setter
+    def swarm_id(self, value):
+        self._swarm_id = value
         self.persist()
 
     @property
@@ -114,6 +142,74 @@ class PortainerCLI(object):
         jwt = r.get('jwt')
         logger.info('logged with jwt: {}'.format(jwt))
         self.jwt = jwt
+
+    def stack_exists(self, endpoint_id, stack_name):
+        stack_url = 'stacks'.format(endpoint_id)
+        result = self.request(
+            stack_url,
+            self.METHOD_GET
+        ).json()
+        if not result:
+            return -1
+        else:
+            for stack in result:
+                if stack['Name'] == stack_name:
+                    return stack['Id']
+            return -1
+
+    def create_or_update_stack(self, endpoint_id, stack_file, stack_name, *args):
+        id = self.stack_exists(endpoint_id, stack_name)
+        if id == -1:
+            self.create_stack(endpoint_id, stack_file, stack_name)
+        else:
+            self.update_stack(id, endpoint_id, stack_file, *args)
+
+    def create_stack(self, endpoint_id, stack_file, stack_name, env_file='', *args):
+        stack_url = 'stacks?type=1&method=string&endpointId={}'.format(
+            endpoint_id
+        )
+        swarm_url = 'endpoints/{}/docker/swarm'.format(endpoint_id)
+        swarm_id = self.request(swarm_url, self.METHOD_GET).json().get('ID')
+        self.swarm_id = swarm_id
+        stack_file_content = open(stack_file).read()
+        if env_file:
+            env = {}
+            for env_line in open(env_file).readlines():
+                env_line = env_line.strip()
+                if not env_line \
+                        or env_line.startswith('#') \
+                        or '=' not in env_line:
+                    continue
+                k, v = env_line.split('=', 1)
+                k, v = k.strip(), v.strip()
+                env[k] = v
+        else:
+            env_args = filter(
+                lambda x: re.match(env_arg_regex, x),
+                args,
+            )
+            env = dict(map(
+                lambda x: env_arg_to_dict(x),
+                env_args,
+            ))
+        final_env = list(
+            map(
+                lambda x: {'name': x[0], 'value': x[1]},
+                env.items()
+            ),
+        )
+        data = {
+            'StackFileContent': stack_file_content,
+            'SwarmID': self.swarm_id,
+            'Name': stack_name,
+            'Env': final_env if len(final_env) > 0 else []
+        }
+        logger.debug('create stack data: {}'.format(data))
+        self.request(
+            stack_url,
+            self.METHOD_POST,
+            data,
+        )
 
     @plac.annotations(
         env_file=('Environment Variable file', 'option'),
@@ -231,7 +327,7 @@ class PortainerCLI(object):
             prepped.headers['Content-Length'] = len(prepped.body)
         if self.jwt:
             prepped.headers['Authorization'] = 'Bearer {}'.format(self.jwt)
-        response = session.send(prepped)
+        response = session.send(prepped, proxies=self.proxies, verify=False)
         logger.debug('request response: {}'.format(response.content))
         response.raise_for_status()
         if printc:
@@ -254,12 +350,13 @@ class PortainerCLI(object):
             logging.basicConfig(level=logging.DEBUG)
         self.local = local
         self.load()
+        self.proxies = {}
         if command == self.COMMAND_CONFIGURE:
             plac.call(self.configure, args)
         elif command == self.COMMAND_LOGIN:
             plac.call(self.login, args)
-        elif command == self.COMMAND_UPDATE_STACK:
-            plac.call(self.update_stack, args)
+        elif command == self.COMMAND_CREATE_OR_UPDATE_STACK:
+            plac.call(self.create_or_update_stack, args)
         elif command == self.COMMAND_UPDATE_REGISTRY:
             plac.call(self.update_registry, args)
         elif command == self.COMMAND_REQUEST:
