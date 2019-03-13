@@ -46,6 +46,7 @@ class PortainerCLI(object):
     local = False
     _base_url = 'http://localhost:9000/'
     _jwt = None
+    _proxies = {}
 
     @property
     def base_url(self):
@@ -66,6 +67,23 @@ class PortainerCLI(object):
     def jwt(self, value):
         self._jwt = value
         self.persist()
+
+    @property
+    def proxies(self):
+        return self._proxies
+
+    @proxies.setter
+    def proxies(self, value):
+        try:
+            self._proxies['http'] = os.environ['HTTP_PROXY']
+        except KeyError:
+            self._proxies['http'] = ''
+        try:
+            self._proxies['https'] = os.environ['HTTPS_PROXY']
+        except KeyError:
+            self._proxies['https'] = ''
+        if self._proxies['http'] == '' and self._proxies['https'] == '':
+            self._proxies = {}
 
     @property
     def data_path(self):
@@ -231,7 +249,7 @@ class PortainerCLI(object):
             prepped.headers['Content-Length'] = len(prepped.body)
         if self.jwt:
             prepped.headers['Authorization'] = 'Bearer {}'.format(self.jwt)
-        response = session.send(prepped)
+        response = session.send(prepped, proxies=self.proxies)
         logger.debug('request response: {}'.format(response.content))
         response.raise_for_status()
         if printc:
@@ -254,6 +272,7 @@ class PortainerCLI(object):
             logging.basicConfig(level=logging.DEBUG)
         self.local = local
         self.load()
+        self.proxies = {}
         if command == self.COMMAND_CONFIGURE:
             plac.call(self.configure, args)
         elif command == self.COMMAND_LOGIN:
