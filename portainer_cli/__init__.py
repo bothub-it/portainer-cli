@@ -264,10 +264,10 @@ class PortainerCLI(object):
                 lambda x: re.match(env_arg_regex, x),
                 args,
             )
-        env = dict(map(
-            lambda x: env_arg_to_dict(x),
-            env_args,
-        ))
+            env = dict(map(
+                lambda x: env_arg_to_dict(x),
+                env_args,
+            ))
         return env
 
     @plac.annotations(
