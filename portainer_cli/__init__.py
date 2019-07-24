@@ -250,8 +250,17 @@ class PortainerCLI(object):
         return stack['Id']
 
     def extract_env(self, env_file='', *args):
+        # Handle --env.PARAM=VALUE
+        env_args = filter(
+            lambda x: re.match(env_arg_regex, x),
+            args,
+        )
+        env = dict(map(
+            lambda x: env_arg_to_dict(x),
+            env_args,
+        ))
+        # Hand environement file
         if env_file:
-            env = {}
             for env_line in open(env_file).readlines():
                 env_line = env_line.strip()
                 if not env_line or env_line.startswith('#') or '=' not in env_line:
@@ -259,15 +268,7 @@ class PortainerCLI(object):
                 k, v = env_line.split('=', 1)
                 k, v = k.strip(), v.strip()
                 env[k] = v
-        else:
-            env_args = filter(
-                lambda x: re.match(env_arg_regex, x),
-                args,
-            )
-            env = dict(map(
-                lambda x: env_arg_to_dict(x),
-                env_args,
-            ))
+
         return env
 
     @plac.annotations(
