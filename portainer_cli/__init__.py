@@ -274,7 +274,7 @@ class PortainerCLI(object):
             stack_name=('Stack name', 'option', 'n', str),
             endpoint_id=('Endpoint id', 'option', 'e', int),
             stack_file=('Stack file', 'option', 'sf'),
-            env_file=('Environment Variable file', 'option'),
+            env_file=('Environment Variable file', 'option', 'ef'),
             prune=('Prune services', 'flag', 'p'),
             clear_env=('Clear all env vars', 'flag', 'c'),
         )
