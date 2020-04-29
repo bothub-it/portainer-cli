@@ -1,6 +1,6 @@
 import setuptools
-from portainer_cli import __version__
 
+__version__ = '0.3.0'
 with open('README.md', 'r') as fh:
     long_description = fh.read()
 

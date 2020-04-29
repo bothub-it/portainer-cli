@@ -47,24 +47,47 @@ portainer-cli login username password
 portainer-cli login douglas d1234
 ```
 
-### update_stack command
+### create_stack command
 
-Update stack.
+Create a stack.
 
 ```bash
-portainer-cli update_stack id endpoint_id [stack_file] [-env-file]
+portainer-cli create_stack -n stack_name -e endpoint_id -sf stack_file
 ```
 
 **E.g:**
 
 ```bash
-portainer-cli update_stack 2 1 docker-compose.yml
+portainer-cli create_stack -n stack_name -e 1 stack-test -sf docker-compose.yml
+```
+
+#### Flags
+
+| Flag | Description |
+|--|--|
+| `-n` or `-stack-name` | Stack name |
+| `-e` or `-endpoint-id` | Endpoint id (required) |
+| `-sf` or `-stack-file` |Stack file |
+| `-ef` or `-env-file` | Pass env file path, usually `.env` |
+
+### update_stack command
+
+Update a stack.
+
+```bash
+portainer-cli update_stack -s stack_id -e endpoint_id -sf stack_file
+```
+
+**E.g:**
+
+```bash
+portainer-cli update_stack -s 18 -e 1 -sf docker-compose.yml
 ```
 
 #### Environment variables arguments
 
 ```bash
-portainer-cli update_stack id endpoint_id [stack_file] --env.var=value
+portainer-cli update_stack id -s stack_id -e endpoint_id -sf stack_file --env.var=value
 ```
 
 Where `var` is the environment variable name and `value` is the environment variable value.
@@ -73,9 +96,94 @@ Where `var` is the environment variable name and `value` is the environment vari
 
 | Flag | Description |
 |--|--|
-| `-env-file` | Pass env file path, usually `.env` |
+| `-s` or `-stack-id` | Stack id |
+| `-e` or `-endpoint-id` | Endpoint id (required) |
+| `-sf` or `-stack-file` |Stack file |
+| `-ef` or `-env-file` | Pass env file path, usually `.env` |
 | `-p` or `--prune` | Prune services |
 | `-c` or `--clear-env` | Clear all environment variables |
+
+### create_or_update_stack command
+
+Create or update a stack based on it's name.
+
+```bash
+portainer-cli create_or_update_stack -n stack_name -e endpoint_id -sf stack_file
+```
+
+**E.g:**
+
+```bash
+portainer-cli update_stack -s 18 -e 1 -sf docker-compose.yml
+```
+
+#### Environment variables arguments
+
+```bash
+portainer-cli create_or_update_stack -n stack_name -e endpoint_id -sf stack_file --env.var=value
+```
+
+Where `var` is the environment variable name and `value` is the environment variable value.
+
+#### Flags
+
+| Flag | Description |
+|--|--|
+| `-n` or `-stack-name` | Stack name |
+| `-e` or `-endpoint-id` | Endpoint id (required) |
+| `-sf` or `-stack-file` |Stack file |
+| `-ef` or `-env-file` | Pass env file path, usually `.env` |
+| `-p` or `--prune` | Prune services |
+| `-c` or `--clear-env` | Clear all environment variables |
+
+### update_stack_acl command
+
+Update acl associated to a stack
+
+```bash
+portainer-cli update_stack_acl -s stack_id -e endpoint_id -o ownership_type
+```
+
+Remark : you can either update by stack_id or stack_name (`-s` or `-n`)
+
+**E.g:**
+
+```bash
+portainer-cli update_stack_acl -n stack-test -e 1 -o restricted -u user1,user2 -t team1,team2
+```
+
+#### Flags
+
+| Flag | Description |
+|--|--|
+| `-s` or `-stack-id` | Stack id |
+| `-n` or `-stack-name` | Stack name |
+| `-e` or `-endpoint-id` | Endpoint id (required) |
+| `-o` or `-ownership-type` | Ownership type (`admin`|`restricted`,`public`) (required) |
+| `-u` or `-users` | Comma separated list of user names (when `restricted`) |
+| `-t` or `-teams` | Comma separated list of team names (when `restricted`) |
+| `-c` or `-clear` | Clear users and teams before updateing them (when `restricted`) |
+
+### get_stack_id command
+
+Get stack id by it's name. return -1 if the stack does not exist
+
+```bash
+portainer-cli get_stack_id -n stack_name -e endpoint_id
+```
+
+**E.g:**
+
+```bash
+portainer-cli get_stack_id -n stack-test -e 1
+```
+
+#### Flags
+
+| Flag | Description |
+|--|--|
+| `-n` or `-stack-name` | Stack name |
+| `-e` or `-endpoint-id` | Endpoint id (required) |
 
 ### update_registry command
 
