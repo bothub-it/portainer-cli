@@ -155,7 +155,7 @@ class PortainerCLI(object):
     def get_users(self):
         users_url = 'users'
         return self.request(users_url, self.METHOD_GET).json()
-    
+
     # retrieve users by their names
     def get_users_by_name(self, names):
         all_users = self.get_users()
@@ -172,7 +172,7 @@ class PortainerCLI(object):
                 logger.debug('User with name \'{}\' found'.format(name))
                 users.append(user)
         return users
-    
+
     # retrieve users by their names
     def get_users_by_name(self, names):
         all_users = self.get_users()
@@ -189,7 +189,7 @@ class PortainerCLI(object):
                 logger.debug('User with name \'{}\' found'.format(name))
                 users.append(user)
         return users
-    
+
     def get_teams(self):
         teams_url = 'teams'
         return self.request(teams_url, self.METHOD_GET).json()
@@ -224,7 +224,7 @@ class PortainerCLI(object):
         if not stack:
             raise Exception('Stack with id={} does not exist'.format(stack_id))
         return stack
-    
+
     def get_stack_by_name(self, stack_name, endpoint_id, mandatory=False):
         result = self.get_stacks()
         if result:
@@ -295,12 +295,13 @@ class PortainerCLI(object):
     )
     def create_stack(self, stack_name, endpoint_id, stack_file='', env_file='', *args):
         logger.info('Creating stack name={}'.format(stack_name))
-        stack_url = 'stacks?type=1&method=string&endpointId={}'.format(
-            endpoint_id
-        )
         swarm_url = 'endpoints/{}/docker/swarm'.format(endpoint_id)
         swarm_id = self.request(swarm_url, self.METHOD_GET).json().get('ID')
         self.swarm_id = swarm_id
+        stack_url = 'stacks?type={}&method=string&endpointId={}'.format(
+            1 if swarm_id is not None else 2,
+            endpoint_id
+        )
         stack_file_content = open(stack_file).read()
 
         env = self.extract_env(env_file, *args)
@@ -312,17 +313,19 @@ class PortainerCLI(object):
         )
         data = {
             'StackFileContent': stack_file_content,
-            'SwarmID': self.swarm_id,
             'Name': stack_name,
             'Env': final_env if len(final_env) > 0 else []
         }
+        if self.swarm_id is not None:
+            data['SwarmID'] = self.swarm_id
+
         logger.debug('create stack data: {}'.format(data))
         self.request(
             stack_url,
             self.METHOD_POST,
             data,
         )
-    
+
     def create_or_update_resource_control(self, stack, public, users, teams):
         resource_control = stack['ResourceControl']
         if resource_control and resource_control['Id'] != 0:
